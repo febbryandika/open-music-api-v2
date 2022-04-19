@@ -7,9 +7,12 @@ class PlaylistsHandler {
     this.postPlaylistHandler = this.postPlaylistHandler.bind(this);
     this.getPlaylistHandler = this.getPlaylistHandler.bind(this);
     this.deletePlaylistHandler = this.deletePlaylistHandler.bind(this);
+
     this.postPlaylistSongHandler = this.postPlaylistSongHandler.bind(this);
     this.getPlaylistSongHandler = this.getPlaylistSongHandler.bind(this);
     this.deletePlaylistSongHandler = this.deletePlaylistSongHandler.bind(this);
+
+    this.getActivityHandler = this.getActivityHandler.bind(this);
   }
 
   async postPlaylistHandler(request, h) {
@@ -61,8 +64,9 @@ class PlaylistsHandler {
     const { songId } = request.payload;
 
     await this._songsService.getSongById(songId);
-    await this._service.verifyPlaylistOwner(playlistId, credentialId);
+    await this._service.verifyPlaylistAccess(playlistId, credentialId);
     await this._service.addPlaylistSong(playlistId, songId);
+    await this._service.addActivity(playlistId, songId, credentialId, 'add');
 
     const response = h.response({
       status: 'success',
@@ -76,7 +80,7 @@ class PlaylistsHandler {
     const { id: playlistId } = request.params;
     const { id: credentialId } = request.auth.credentials;
 
-    await this._service.verifyPlaylistOwner(playlistId, credentialId);
+    await this._service.verifyPlaylistAccess(playlistId, credentialId);
     const playlists = await this._service.getPlaylistById(playlistId);
     const playlistSongs = await this._service.getPlaylistSong(playlistId);
 
@@ -99,12 +103,29 @@ class PlaylistsHandler {
     const { id: credentialId } = request.auth.credentials;
     const { songId } = request.payload;
 
-    await this._service.verifyPlaylistOwner(playlistId, credentialId);
+    await this._service.verifyPlaylistAccess(playlistId, credentialId);
     await this._service.deletePlaylistSong(playlistId, songId);
+    await this._service.addActivity(playlistId, songId, credentialId, 'delete');
 
     return {
       status: 'success',
       message: 'Lagu berhasil dihapus dari playlist',
+    };
+  }
+
+  async getActivityHandler(request) {
+    const { id: playlistId } = request.params;
+    const { id: credentialId } = request.auth.credentials;
+
+    await this._service.verifyPlaylistAccess(playlistId, credentialId);
+    const activities = await this._service.getActivity(playlistId);
+
+    return {
+      status: 'success',
+      data: {
+        playlistId,
+        activities,
+      },
     };
   }
 }

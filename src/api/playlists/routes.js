@@ -47,6 +47,14 @@ const routes = (handler) => [
       auth: 'openmusic',
     },
   },
+  {
+    method: 'GET',
+    path: '/playlists/{id}/activities',
+    handler: handler.getActivityHandler,
+    options: {
+      auth: 'openmusic',
+    },
+  },
 ];
 
 module.exports = routes;
